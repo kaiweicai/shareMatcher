@@ -4,6 +4,7 @@ use std::{error, string};
 use tokio::fs::File;
 use tokio::io::{AsyncBufReadExt, BufReader};
 
+//接龙
 #[derive(Debug, Default)]
 struct Dragon {
     pub no: u32,
@@ -20,17 +21,22 @@ impl TryFrom<&str> for Dragon {
         let mut data: [&str; 3] = Default::default();
         data[2] = value.split(" ").last().unwrap();
         data[0] = value.rsplit(" ").last().unwrap();
-        data[1] =value.strip_prefix(data[0]).unwrap().strip_suffix(data[2]).unwrap().trim();
+        data[1] = value
+            .strip_prefix(data[0])
+            .unwrap()
+            .strip_suffix(data[2])
+            .unwrap()
+            .trim();
         let dragon = Dragon {
             no: match data[0].strip_suffix(".").unwrap().parse() {
                 Ok(n) => n,
                 Err(e) => {
-                    println!("error data is {:?},parse error: {:?}", data[0],e);
+                    println!("error data is {:?},parse error: {:?}", data[0], e);
                     panic!("error parsing data");
                 }
             },
             name: data[1].to_string(),
-            
+
             amount: data[2].parse().unwrap(),
             prior: false,
         };
@@ -43,10 +49,18 @@ async fn main() -> std::io::Result<()> {
     let file = File::open("src/list.txt").await?;
     let br = BufReader::new(file);
     let mut lines = br.lines();
-    let mut investMap = BTreeMap::<u128, HashSet<&str>>::new();
+    let mut invest_map = BTreeMap::<u32, HashSet<String>>::new();
     while let Some(line) = lines.next_line().await? {
         let dragon: Dragon = line.as_str().try_into().unwrap();
         println!("{:?}", dragon);
+        if let None = invest_map.get(&dragon.amount) {
+            invest_map.insert(dragon.amount, HashSet::new());
+        }
+        invest_map
+            .get_mut(&dragon.amount)
+            .unwrap()
+            .insert(dragon.name);
     }
+    println!("{:?}", invest_map);
     return Ok(());
 }
